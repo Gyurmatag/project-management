@@ -1,50 +1,99 @@
-# Building a Remote MCP Server on Cloudflare (Without Auth)
+# Project Management Board
 
-This example allows you to deploy a remote MCP server that doesn't require authentication on Cloudflare Workers. 
+A modern Kanban-style project management board built with Cloudflare Workers, D1 Database, and MCP (Model Context Protocol). This application allows you to manage tasks with drag-and-drop functionality across different columns.
 
-## Get started: 
+## Features
 
-[![Deploy to Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/ai/tree/main/demos/remote-mcp-authless)
+- **Kanban Board Interface**: Clean, modern UI with drag-and-drop task management
+- **Task Management**: Create, update, move, and delete tasks
+- **Column Organization**: Organize tasks into "To Do", "In Progress", and "Done" columns
+- **Priority System**: Tasks can have low, medium, or high priority
+- **Real-time Updates**: Changes are immediately reflected in the UI
+- **MCP Integration**: Full MCP server with tools for task management
+- **D1 Database**: Persistent storage using Cloudflare's D1 SQLite database
 
-This will deploy your MCP server to a URL like: `remote-mcp-server-authless.<your-account>.workers.dev/sse`
+## Architecture
 
-Alternatively, you can use the command line below to get the remote MCP Server created on your local machine:
+- **Frontend**: Vanilla HTML/CSS/JavaScript with drag-and-drop functionality
+- **Backend**: Cloudflare Workers with MCP server
+- **Database**: Cloudflare D1 (SQLite) for persistent storage
+- **API**: MCP tools for all task operations
+
+## MCP Tools Available
+
+- `get_board`: Get the complete Kanban board with all columns and tasks
+- `get_tasks`: Get tasks from a specific column or all tasks
+- `get_columns`: Get all available columns
+- `create_task`: Create a new task
+- `update_task`: Update task title, description, or priority
+- `move_task`: Move a task between columns or reorder within a column
+- `delete_task`: Delete a task
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js and npm
+- Cloudflare account
+- Wrangler CLI
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. The D1 database is already configured. If you need to recreate it:
+   ```bash
+   npx wrangler d1 create project-management-db
+   npx wrangler d1 execute project-management-db --file=schema.sql
+   ```
+
+### Development
+
+Start the development server:
 ```bash
-npm create cloudflare@latest -- my-mcp-server --template=cloudflare/ai/demos/remote-mcp-authless
+npm run dev
 ```
 
-## Customizing your MCP Server
+### Deployment
 
-To add your own [tools](https://developers.cloudflare.com/agents/model-context-protocol/tools/) to the MCP server, define each tool inside the `init()` method of `src/index.ts` using `this.server.tool(...)`. 
-
-## Connect to Cloudflare AI Playground
-
-You can connect to your MCP server from the Cloudflare AI Playground, which is a remote MCP client:
-
-1. Go to https://playground.ai.cloudflare.com/
-2. Enter your deployed MCP server URL (`remote-mcp-server-authless.<your-account>.workers.dev/sse`)
-3. You can now use your MCP tools directly from the playground!
-
-## Connect Claude Desktop to your MCP server
-
-You can also connect to your remote MCP server from local MCP clients, by using the [mcp-remote proxy](https://www.npmjs.com/package/mcp-remote). 
-
-To connect to your MCP server from Claude Desktop, follow [Anthropic's Quickstart](https://modelcontextprotocol.io/quickstart/user) and within Claude Desktop go to Settings > Developer > Edit Config.
-
-Update with this configuration:
-
-```json
-{
-  "mcpServers": {
-    "calculator": {
-      "command": "npx",
-      "args": [
-        "mcp-remote",
-        "http://localhost:8787/sse"  // or remote-mcp-server-authless.your-account.workers.dev/sse
-      ]
-    }
-  }
-}
+Deploy to Cloudflare Workers:
+```bash
+npm run deploy
 ```
 
-Restart Claude and you should see the tools become available. 
+## Database Schema
+
+The application uses two main tables:
+
+- **columns**: Stores Kanban board columns (To Do, In Progress, Done)
+- **tasks**: Stores individual tasks with references to columns
+
+## Usage
+
+1. Open the application in your browser
+2. Add new tasks using the input field at the top
+3. Drag and drop tasks between columns to update their status
+4. Tasks are automatically assigned unique IDs (DEV-101, DEV-102, etc.)
+5. Priority levels are indicated by colored dots on each task
+
+## API Endpoints
+
+- `GET /`: Main application interface
+- `POST /mcp`: MCP server endpoint for tool calls
+- `GET /sse`: Server-sent events endpoint
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details

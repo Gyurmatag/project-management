@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Management Board</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1f2937;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #6b7280;
+            font-size: 1.125rem;
+        }
+
+        .add-task-section {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .add-task-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .add-task-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .add-task-btn {
+            background: #111827;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .add-task-btn:hover {
+            background: #374151;
+        }
+
+        .board {
+            display: flex;
+            gap: 1.5rem;
+            padding: 2rem;
+            min-height: calc(100vh - 200px);
+            overflow-x: auto;
+        }
+
+        .column {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            min-width: 300px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
+        .column-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .column-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .column-count {
+            background: #f3f4f6;
+            color: #6b7280;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .column.done .column-header {
+            border-bottom-color: #10b981;
+        }
+
+        .column.done .column-title {
+            color: #10b981;
+        }
+
+        .tasks {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .task {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            cursor: grab;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .task:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .task.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .task-id {
+            font-size: 0.75rem;
+            color: #6b7280;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-title {
+            font-size: 1rem;
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 0.5rem;
+        }
+
+        .task-description {
+            font-size: 0.875rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+
+        .task-priority {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .task-priority.high {
+            background: #ef4444;
+        }
+
+        .task-priority.medium {
+            background: #f59e0b;
+        }
+
+        .task-priority.low {
+            background: #10b981;
+        }
+
+        .drag-handle {
+            position: absolute;
+            left: 0.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            cursor: grab;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6b7280;
+        }
+
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .board {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .column {
+                min-width: auto;
+            }
+            
+            .add-task-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Project Board</h1>
+        <p>Organize your tasks with simple drag and drop</p>
+    </div>
+
+    <div class="add-task-section">
+        <input type="text" id="taskInput" class="add-task-input" placeholder="Add a new task...">
+        <button id="addTaskBtn" class="add-task-btn">+ Add Task</button>
+    </div>
+
+    <div id="board" class="board">
+        <div class="loading">Loading board...</div>
+    </div>
+
+    <script>
+        class ProjectBoard {
+            constructor() {
+                this.board = document.getElementById('board');
+                this.taskInput = document.getElementById('taskInput');
+                this.addTaskBtn = document.getElementById('addTaskBtn');
+                this.columns = [];
+                this.tasks = [];
+                this.draggedTask = null;
+                
+                this.init();
+            }
+
+            async init() {
+                this.addTaskBtn.addEventListener('click', () => this.addTask());
+                this.taskInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.addTask();
+                });
+
+                await this.loadBoard();
+            }
+
+            async loadBoard() {
+                try {
+                    const response = await fetch('/api/board');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.renderBoard(data.board);
+                    } else {
+                        this.showError('Failed to load board: ' + data.error);
+                    }
+                } catch (error) {
+                    this.showError('Error loading board: ' + error.message);
+                }
+            }
+
+            renderBoard(boardData) {
+                this.columns = boardData;
+                this.board.innerHTML = '';
+
+                boardData.forEach(column => {
+                    const columnEl = this.createColumn(column);
+                    this.board.appendChild(columnEl);
+                });
+            }
+
+            createColumn(column) {
+                const columnEl = document.createElement('div');
+                columnEl.className = `column ${column.name.toLowerCase().replace(' ', '-')}`;
+                columnEl.dataset.columnId = column.id;
+
+                const headerEl = document.createElement('div');
+                headerEl.className = 'column-header';
+                headerEl.innerHTML = `
+                    <div class="column-title">${column.name}</div>
+                    <div class="column-count">${column.tasks.length}</div>
+                `;
+
+                const tasksEl = document.createElement('div');
+                tasksEl.className = 'tasks';
+
+                column.tasks.forEach(task => {
+                    const taskEl = this.createTask(task);
+                    tasksEl.appendChild(taskEl);
+                });
+
+                columnEl.appendChild(headerEl);
+                columnEl.appendChild(tasksEl);
+
+                // Add drop zone functionality
+                columnEl.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    columnEl.classList.add('drag-over');
+                });
+
+                columnEl.addEventListener('dragleave', () => {
+                    columnEl.classList.remove('drag-over');
+                });
+
+                columnEl.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    columnEl.classList.remove('drag-over');
+                    
+                    if (this.draggedTask) {
+                        const newColumnId = parseInt(columnEl.dataset.columnId);
+                        this.moveTask(this.draggedTask.dataset.taskId, newColumnId);
+                    }
+                });
+
+                return columnEl;
+            }
+
+            createTask(task) {
+                const taskEl = document.createElement('div');
+                taskEl.className = 'task';
+                taskEl.draggable = true;
+                taskEl.dataset.taskId = task.task_id;
+                taskEl.dataset.columnId = task.column_id;
+
+                taskEl.innerHTML = `
+                    <div class="drag-handle">⋮⋮</div>
+                    <div class="task-priority ${task.priority}"></div>
+                    <div class="task-id">${task.task_id}</div>
+                    <div class="task-title">${task.title}</div>
+                    ${task.description ? `<div class="task-description">${task.description}</div>` : ''}
+                `;
+
+                // Add drag functionality
+                taskEl.addEventListener('dragstart', (e) => {
+                    this.draggedTask = taskEl;
+                    taskEl.classList.add('dragging');
+                });
+
+                taskEl.addEventListener('dragend', () => {
+                    this.draggedTask = null;
+                    taskEl.classList.remove('dragging');
+                });
+
+                return taskEl;
+            }
+
+            async addTask() {
+                const title = this.taskInput.value.trim();
+                if (!title) return;
+
+                try {
+                    const response = await fetch('/api/tasks', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            title: title,
+                            column_id: 1, // Add to "To Do" column
+                            priority: 'medium'
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.taskInput.value = '';
+                        await this.loadBoard();
+                    } else {
+                        this.showError('Failed to add task: ' + data.error);
+                    }
+                } catch (error) {
+                    this.showError('Error adding task: ' + error.message);
+                }
+            }
+
+            async moveTask(taskId, newColumnId) {
+                try {
+                    const response = await fetch(`/api/tasks/${taskId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            new_column_id: newColumnId
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        await this.loadBoard();
+                    } else {
+                        this.showError('Failed to move task: ' + data.error);
+                    }
+                } catch (error) {
+                    this.showError('Error moving task: ' + error.message);
+                }
+            }
+
+            showError(message) {
+                const errorEl = document.createElement('div');
+                errorEl.className = 'error';
+                errorEl.textContent = message;
+                this.board.innerHTML = '';
+                this.board.appendChild(errorEl);
+            }
+        }
+
+        // Initialize the board when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ProjectBoard();
+        });
+    </script>
+</body>
+</html>

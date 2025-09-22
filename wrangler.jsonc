@@ -22,6 +22,17 @@
 			}
 		]
 	},
+	"assets": {
+		"directory": "./public",
+		"binding": "ASSETS"
+	},
+	"d1_databases": [
+		{
+			"binding": "project_management_db",
+			"database_name": "project-management-db",
+			"database_id": "0852784b-f49b-4fc2-9bd8-52e26c21c2ee"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}
