@@ -259,6 +259,7 @@
                 this.columns = [];
                 this.tasks = [];
                 this.draggedTask = null;
+                this.pollingInterval = null;
                 
                 this.init();
             }
@@ -270,6 +271,7 @@
                 });
 
                 await this.loadBoard();
+                this.startPolling();
             }
 
             async loadBoard() {
@@ -288,13 +290,64 @@
             }
 
             renderBoard(boardData) {
-                this.columns = boardData;
-                this.board.innerHTML = '';
+                // Only re-render if the data has actually changed
+                if (this.hasBoardDataChanged(boardData)) {
+                    this.columns = boardData;
+                    this.board.innerHTML = '';
 
-                boardData.forEach(column => {
-                    const columnEl = this.createColumn(column);
-                    this.board.appendChild(columnEl);
-                });
+                    boardData.forEach(column => {
+                        const columnEl = this.createColumn(column);
+                        this.board.appendChild(columnEl);
+                    });
+                }
+            }
+
+            hasBoardDataChanged(newBoardData) {
+                if (!this.columns || this.columns.length !== newBoardData.length) {
+                    return true;
+                }
+
+                for (let i = 0; i < this.columns.length; i++) {
+                    const oldColumn = this.columns[i];
+                    const newColumn = newBoardData[i];
+                    
+                    if (oldColumn.id !== newColumn.id || 
+                        oldColumn.name !== newColumn.name ||
+                        oldColumn.tasks.length !== newColumn.tasks.length) {
+                        return true;
+                    }
+
+                    // Check if any task has changed
+                    for (let j = 0; j < oldColumn.tasks.length; j++) {
+                        const oldTask = oldColumn.tasks[j];
+                        const newTask = newColumn.tasks[j];
+                        
+                        if (!newTask || 
+                            oldTask.task_id !== newTask.task_id ||
+                            oldTask.title !== newTask.title ||
+                            oldTask.description !== newTask.description ||
+                            oldTask.priority !== newTask.priority ||
+                            oldTask.column_id !== newTask.column_id) {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            startPolling() {
+                // Poll every 2 seconds
+                this.pollingInterval = setInterval(async () => {
+                    await this.loadBoard();
+                }, 2000);
+            }
+
+            stopPolling() {
+                if (this.pollingInterval) {
+                    clearInterval(this.pollingInterval);
+                    this.pollingInterval = null;
+                }
             }
 
             createColumn(column) {
@@ -376,6 +429,9 @@
                 const title = this.taskInput.value.trim();
                 if (!title) return;
 
+                // Temporarily pause polling during task creation
+                this.stopPolling();
+
                 try {
                     const response = await fetch('/api/tasks', {
                         method: 'POST',
@@ -399,10 +455,16 @@
                     }
                 } catch (error) {
                     this.showError('Error adding task: ' + error.message);
+                } finally {
+                    // Resume polling after task creation
+                    this.startPolling();
                 }
             }
 
             async moveTask(taskId, newColumnId) {
+                // Temporarily pause polling during task move
+                this.stopPolling();
+
                 try {
                     const response = await fetch(`/api/tasks/${taskId}`, {
                         method: 'PUT',
@@ -423,6 +485,9 @@
                     }
                 } catch (error) {
                     this.showError('Error moving task: ' + error.message);
+                } finally {
+                    // Resume polling after task move
+                    this.startPolling();
                 }
             }
 
@@ -436,8 +501,16 @@
         }
 
         // Initialize the board when the page loads
+        let projectBoard;
         document.addEventListener('DOMContentLoaded', () => {
-            new ProjectBoard();
+            projectBoard = new ProjectBoard();
+        });
+
+        // Clean up polling when the page is unloaded
+        window.addEventListener('beforeunload', () => {
+            if (projectBoard) {
+                projectBoard.stopPolling();
+            }
         });
     </script>
     
